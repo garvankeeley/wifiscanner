@@ -26,17 +26,9 @@
 #include <windows.h>
 #include <winioctl.h>
 #include <wlanapi.h>
-
-//#include "base/utf_string_conversions.h"
-//#include "base/win/windows_version.h"
-//#include "content/browser/geolocation/wifi_data_provider_common.h"
-//#include "content/browser/geolocation/wifi_data_provider_common_win.h"
-
 #include <string>
 #include <vector>
 #include "assert.h"
-
-#define DCHECK assert
 
 // Taken from ndis.h for WinCE.
 #define NDIS_STATUS_INVALID_LENGTH   ((NDIS_STATUS)0xC0010014L)
@@ -87,13 +79,12 @@ typedef DWORD (WINAPI* WlanCloseHandleFunction)(HANDLE hClientHandle,
                                                 PVOID pReserved);
 
 struct AccessPoint {
-
   std::string mac_address;
   int radio_signal_strength;
   std::string ssid;
-
 };
 
+// define for compatibility with chromium code
 #define string16 std::wstring
 
 class WindowsNdisApi {
@@ -102,11 +93,10 @@ class WindowsNdisApi {
   static WindowsNdisApi* Create();
 
   // WlanApiInterface
-  virtual bool GetAccessPointData(std::vector<AccessPoint>& data);
+  virtual bool GetAccessPointData(std::vector<AccessPoint>& outData);
 
  private:
-  static bool GetInterfacesNDIS(
-      std::vector<string16>* interface_service_names_out);
+  static bool GetInterfacesNDIS(std::vector<string16>* interface_service_names_out);
 
   // Swaps in content of the vector passed
   explicit WindowsNdisApi(std::vector<string16>* interface_service_names);
@@ -152,7 +142,7 @@ WindowsNdisApi* WindowsNdisApi::Create() {
   return NULL;
 }
 
-bool WindowsNdisApi::GetAccessPointData(std::vector<AccessPoint>& data) {
+bool WindowsNdisApi::GetAccessPointData(std::vector<AccessPoint>& outData) {
   int interfaces_failed = 0;
   int interfaces_succeeded = 0;
 
@@ -170,7 +160,7 @@ bool WindowsNdisApi::GetAccessPointData(std::vector<AccessPoint>& data) {
     }
 
     // Get the data.
-    if (GetInterfaceDataNDIS(adapter_handle, data)) {
+    if (GetInterfaceDataNDIS(adapter_handle, outData)) {
       ++interfaces_succeeded;
     } else {
       ++interfaces_failed;
@@ -196,7 +186,9 @@ bool WindowsNdisApi::GetInterfacesNDIS(std::vector<string16>* interface_service_
       &network_cards_key) != ERROR_SUCCESS) {
     return false;
   }
-  DCHECK(network_cards_key);
+  if (!network_cards_key) {
+    return false;
+  }
 
   for (int i = 0; ; ++i) {
     TCHAR name[kStringLength];
@@ -217,7 +209,9 @@ bool WindowsNdisApi::GetInterfacesNDIS(std::vector<string16>* interface_service_
         ERROR_SUCCESS) {
       break;
     }
-    DCHECK(hardware_key);
+    if (!hardware_key) {
+      return false;
+    }
 
     TCHAR service_name[kStringLength];
     DWORD service_name_size = kStringLength;
@@ -266,7 +260,7 @@ bool ConvertToAccessPointData(const NDIS_WLAN_BSSID& data, AccessPoint& access_p
 
 int GetDataFromBssIdList(const NDIS_802_11_BSSID_LIST& bss_id_list,
                          int list_size,
-                         std::vector<AccessPoint>& data) 
+                         std::vector<AccessPoint>& outData) 
 {
   // Walk through the BSS IDs.
   int found = 0;
@@ -283,7 +277,7 @@ int GetDataFromBssIdList(const NDIS_802_11_BSSID_LIST& bss_id_list,
     }
     AccessPoint access_point_data;
     if (ConvertToAccessPointData(*bss_id, access_point_data)) {
-      data.push_back(access_point_data);
+      outData.push_back(access_point_data);
       ++found;
     }
     // Move to the next BSS ID.
@@ -293,9 +287,8 @@ int GetDataFromBssIdList(const NDIS_802_11_BSSID_LIST& bss_id_list,
 }
 
 
-
 bool WindowsNdisApi::GetInterfaceDataNDIS(HANDLE adapter_handle,
-                                          std::vector<AccessPoint>& data) {
+                                          std::vector<AccessPoint>& outData) {
   DWORD bytes_out;
   int result;
 
@@ -327,7 +320,7 @@ bool WindowsNdisApi::GetInterfaceDataNDIS(HANDLE adapter_handle,
   if (result == ERROR_SUCCESS) {
     NDIS_802_11_BSSID_LIST* bssid_list = 
         reinterpret_cast<NDIS_802_11_BSSID_LIST*>(&_buffer[0]);
-    GetDataFromBssIdList(*bssid_list, _buffer.size(), data);
+    GetDataFromBssIdList(*bssid_list, _buffer.size(), outData);
   }
 
   return true;
