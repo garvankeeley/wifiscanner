@@ -1,0 +1,66 @@
+diff --git a/netwerk/wifi/moz.build b/netwerk/wifi/moz.build
+--- a/netwerk/wifi/moz.build
++++ b/netwerk/wifi/moz.build
+@@ -39,16 +39,17 @@ elif CONFIG['OS_ARCH'] in ('DragonFly', 
+     UNIFIED_SOURCES += [
+         'nsWifiScannerFreeBSD.cpp',
+     ]
+ elif CONFIG['OS_ARCH'] == 'WINNT':
+     UNIFIED_SOURCES += [
+         'nsWifiScannerWin.cpp',
+         'win_wifiScanner.cpp',
+         'win_wlanLibrary.cpp',
++        'win_xp_wifiScanner.cpp'
+     ]
+ elif CONFIG['OS_ARCH'] == 'SunOS':
+     CXXFLAGS += CONFIG['GLIB_CFLAGS']
+     UNIFIED_SOURCES += [
+         'nsWifiScannerSolaris.cpp',
+     ]
+ 
+ if CONFIG['NECKO_WIFI_DBUS']:
+diff --git a/netwerk/wifi/nsWifiScannerWin.cpp b/netwerk/wifi/nsWifiScannerWin.cpp
+--- a/netwerk/wifi/nsWifiScannerWin.cpp
++++ b/netwerk/wifi/nsWifiScannerWin.cpp
+@@ -7,16 +7,17 @@
+ // moz headers (alphabetical)
+ #include "nsAutoPtr.h"
+ #include "nsCOMArray.h"
+ #include "nsComponentManagerUtils.h"
+ #include "nsIMutableArray.h"
+ #include "nsServiceManagerUtils.h"
+ #include "nsWifiAccessPoint.h"
+ #include "win_wifiScanner.h"
++#include "win_xp_wifiScanner.h"
+ 
+ using namespace mozilla;
+ 
+ /**
+  * `nsWifiMonitor` is declared in the cross-platform nsWifiMonitor.h and
+  * is mostly defined in the cross-platform nsWifiMonitor.cpp. This function
+  * is implemented in various platform-specific files but the implementation
+  * is almost identical in each file. We relegate the Windows-specific
+@@ -35,17 +36,22 @@ nsWifiMonitor::DoScan()
+         return NS_ERROR_FAILURE;
+       }
+     }
+ 
+     // Regularly get the access point data.
+ 
+     nsCOMArray<nsWifiAccessPoint> lastAccessPoints;
+     nsCOMArray<nsWifiAccessPoint> accessPoints;
+-
++    WindowsNdisApi* w = WindowsNdisApi::Create();
++    if (w)
++    {
++      w->GetAccessPointData(accessPoints);
++      delete w;
++    }
+     do {
+       accessPoints.Clear();
+       nsresult rv = mWinWifiScanner->GetAccessPointsFromWLAN(accessPoints);
+       if (NS_FAILED(rv)) {
+         return rv;
+       }
+ 
+       bool accessPointsChanged = !AccessPointsEqual(accessPoints, lastAccessPoints);
