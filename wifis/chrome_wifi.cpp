@@ -86,8 +86,8 @@ typedef VOID (WINAPI* WlanFreeMemoryFunction)(PVOID pMemory);
 typedef DWORD (WINAPI* WlanCloseHandleFunction)(HANDLE hClientHandle,
                                                 PVOID pReserved);
 
-class AccessPoint {
-public:
+struct AccessPoint {
+
   std::string mac_address;
   int radio_signal_strength;
   std::string ssid;
@@ -115,9 +115,6 @@ class WindowsNdisApi {
                             std::vector<AccessPoint>& data);
   // NDIS variables.
   std::vector<string16> interface_service_names_;
-
-  // Remembers scan result buffer size across calls.
-  /////int oid_buffer_size_;
 
   std::vector<char> _buffer;
 };
@@ -156,7 +153,6 @@ WindowsNdisApi* WindowsNdisApi::Create() {
 }
 
 bool WindowsNdisApi::GetAccessPointData(std::vector<AccessPoint>& data) {
-  //DCHECK(data);
   int interfaces_failed = 0;
   int interfaces_succeeded = 0;
 
@@ -242,10 +238,6 @@ bool WindowsNdisApi::GetInterfacesNDIS(std::vector<string16>* interface_service_
 }
 #define uint8 unsigned char
 
-//std::wstring AUTF8ToUTF16(const std::string &data)
-//{
-//    return std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(data);
-//}
 #define MAC_AS_NUM_LEN 6
 static std::string MacAddressAsString(const unsigned char macAsNumber[MAC_AS_NUM_LEN])
 {
@@ -304,7 +296,6 @@ int GetDataFromBssIdList(const NDIS_802_11_BSSID_LIST& bss_id_list,
 
 bool WindowsNdisApi::GetInterfaceDataNDIS(HANDLE adapter_handle,
                                           std::vector<AccessPoint>& data) {
-  //DCHECK(data);
   DWORD bytes_out;
   int result;
 
@@ -332,7 +323,6 @@ bool WindowsNdisApi::GetInterfaceDataNDIS(HANDLE adapter_handle,
       break;
     }
   }
-  //DCHECK(buffer.get());
 
   if (result == ERROR_SUCCESS) {
     NDIS_802_11_BSSID_LIST* bssid_list = 
@@ -347,20 +337,11 @@ namespace {
 
 bool GetNetworkData(const WLAN_BSS_ENTRY& bss_entry, AccessPoint& access_point_data) {
   // Currently we get only MAC address, signal strength and SSID.
-  //DCHECK(access_point_data);
   access_point_data.mac_address = MacAddressAsString(bss_entry.dot11Bssid);
   access_point_data.radio_signal_strength = bss_entry.lRssi;
   // bss_entry.dot11Ssid.ucSSID is not null-terminated.
   access_point_data.ssid = std::string(reinterpret_cast<const char*>(bss_entry.dot11Ssid.ucSSID),
                                        static_cast<ULONG>(bss_entry.dot11Ssid.uSSIDLength));
-
- // UTF8ToUTF16(reinterpret_cast<const char*>(bss_entry.dot11Ssid.ucSSID),
-   //           static_cast<ULONG>(bss_entry.dot11Ssid.uSSIDLength),
-     //         &access_point_data->ssid);
-  // TODO(steveblock): Is it possible to get the following?
-  // access_point_data->signal_to_noise
-  // access_point_data->age
-  // access_point_data->channel
   return true;
 }
 
@@ -431,40 +412,13 @@ int PerformQuery(HANDLE adapter_handle,
 }
 
 bool ResizeBuffer(size_t requested_size, std::vector<char>& buffer) {
-  //DCHECK_GT(requested_size, 0);
-  //DCHECK(buffer);
   if (requested_size > kMaximumBufferSize) {
     buffer.resize(kInitialBufferSize);
     return false;
   }
 
- // buffer->reset(reinterpret_cast<BYTE*>(realloc(buffer->release(), requested_size)));
   buffer.resize(requested_size);
   return true;
 }
 
-//bool GetSystemDirectory(string16* path) {
-//  DCHECK(path);
-//  // Return value includes terminating NULL.
-//  int buffer_size = ::GetSystemDirectory(NULL, 0);
-//  if (buffer_size == 0) {
-//    return false;
-//  }
-//  scoped_array<char16> buffer(new char16[buffer_size]);
-//
-//  // Return value excludes terminating NULL.
-//  int characters_written = ::GetSystemDirectory(buffer.get(), buffer_size);
-//  if (characters_written == 0) {
-//    return false;
-//  }
-//  DCHECK_EQ(buffer_size - 1, characters_written);
-//
-//  path->assign(buffer.get(), characters_written);
-//
-//  if (*path->rbegin() != L'\\') {
-//    path->append(L"\\");
-//  }
-//  DCHECK_EQ(L'\\', *path->rbegin());
-//  return true;
-//}
 }  // namespace
