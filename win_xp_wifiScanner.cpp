@@ -202,29 +202,15 @@ bool WindowsNdisApi::GetInterfacesNDIS(std::vector<std::string>& interface_servi
 }
 #define uint8 unsigned char
 
-#define MAC_AS_NUM_LEN 6
-static std::string MacAddressAsString(const unsigned char macAsNumber[MAC_AS_NUM_LEN])
-{
-  const int charlen = MAC_AS_NUM_LEN * 2;
-  std::string result = std::string(charlen, ' ');
-  const char hexmap[] = { '0', '1', '2', '3', '4', '5', '6', '7',
-    '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };  
-  for (int i = 0; i < MAC_AS_NUM_LEN; ++i) {
-    result[2 * i] = hexmap[(macAsNumber[i] & 0xF0) >> 4];
-    result[2 * i + 1] = hexmap[macAsNumber[i] & 0x0F];
-  }
-  return result;
-}
-
 bool ConvertToAccessPointData(const NDIS_WLAN_BSSID& data, nsWifiAccessPoint* access_point_data) 
 {
-	access_point_data->setMac(reinterpret_cast<const unsigned char*>(MacAddressAsString(data.MacAddress).c_str()));
-	access_point_data->setSignal(data.Rssi);
-	// Note that _NDIS_802_11_SSID::Ssid::Ssid is not null-terminated.
+  access_point_data->setMac(data.MacAddress);
+  access_point_data->setSignal(data.Rssi);
+  // Note that _NDIS_802_11_SSID::Ssid::Ssid is not null-terminated.
   const unsigned char* ssid = data.Ssid.Ssid;
   size_t len = data.Ssid.SsidLength;
   access_point_data->setSSID(reinterpret_cast<const char*>(ssid), len);
-	return true;
+  return true;
 }
 
 int GetDataFromBssIdList(const NDIS_802_11_BSSID_LIST& bss_id_list,
