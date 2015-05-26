@@ -80,7 +80,7 @@ diff --git a/netwerk/wifi/nsWifiScannerWin.cpp b/netwerk/wifi/nsWifiScannerWin.c
 +      } else {
 +        mWinWifiScanner = new WinXPWifiScanner();
 +      }
-+      
++
        if (!mWinWifiScanner) {
          // TODO: Probably return OOM error
          return NS_ERROR_FAILURE;
@@ -382,7 +382,7 @@ new file mode 100644
 +  }
 +
 +  if (result == ERROR_SUCCESS) {
-+    NDIS_802_11_BSSID_LIST* bssid_list = 
++    NDIS_802_11_BSSID_LIST* bssid_list =
 +        reinterpret_cast<NDIS_802_11_BSSID_LIST*>(&_buffer[0]);
 +    GetDataFromBssIdList(*bssid_list, _buffer.size(), outData);
 +  }
@@ -393,7 +393,7 @@ new file mode 100644
 +namespace {
 +#define uint8 unsigned char
 +
-+bool ConvertToAccessPointData(const NDIS_WLAN_BSSID& data, nsWifiAccessPoint* access_point_data) 
++bool ConvertToAccessPointData(const NDIS_WLAN_BSSID& data, nsWifiAccessPoint* access_point_data)
 +{
 +  access_point_data->setMac(data.MacAddress);
 +  access_point_data->setSignal(data.Rssi);
@@ -406,7 +406,7 @@ new file mode 100644
 +
 +int GetDataFromBssIdList(const NDIS_802_11_BSSID_LIST& bss_id_list,
 +                         int list_size,
-+                         nsCOMArray<nsWifiAccessPoint>& outData) 
++                         nsCOMArray<nsWifiAccessPoint>& outData)
 +{
 +  // Walk through the BSS IDs.
 +  int found = 0;
@@ -551,7 +551,7 @@ new file mode 100644
 +class nsWifiAccessPoint;
 +class WindowsNdisApi;
 +
-+// This class is wrapper into the chromium WindowNdisApi class for scanning wifis 
++// This class is wrapper into the Chromium WindowNdisApi class for scanning wifis
 +// on Windows XP. When Firefox drops XP support, this code can go.
 +class WinXPWifiScanner : public WindowsWifiScannerInterface {
 +public:
